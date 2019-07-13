@@ -14,10 +14,6 @@ import com.binance.api.client.BinanceApiAsyncRestClient;
 import com.binance.api.client.BinanceApiClientFactory;
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.BinanceApiWebSocketClient;
-import com.binance.api.client.domain.event.AggTradeEvent;
-import com.binance.api.client.domain.event.DepthEvent;
-import com.binance.api.client.domain.general.ExchangeInfo;
-import com.binance.api.client.domain.market.OrderBookEntrySerializer;
 import com.binance.api.client.domain.market.TickerPrice;
 import com.mongodb.async.SingleResultCallback;
 import com.mongodb.async.client.MongoClient;
@@ -30,7 +26,6 @@ public class BinanceSrvImpl implements BinanceSrv {
 	static MongoCollection<Document> collection  = getTable();;
 	@Override
 	public String do1() throws IOException, InterruptedException {
-		// TODO Auto-generated method stub
 		
 		BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance("lw73x6WKXdM5YmhDOJtKOVXOXgCNnoNVkm0YbV1P3668l4J0t2GvrIpftpY3xT3P", "tC3EPxnruxZrpUJUtGL1NkZozc9Y9AhpTXgljihiVuTZB6ec9TlUftANIwPX5G2a");
 		BinanceApiRestClient clientREST = factory.newRestClient();
@@ -40,64 +35,26 @@ public class BinanceSrvImpl implements BinanceSrv {
 		long serverTime = clientREST.getServerTime();
 		System.out.println(serverTime);
 		List<TickerPrice> lst =clientREST.getAllPrices();
-		ExchangeInfo exchangeInfo  =  new ExchangeInfo();
-		OrderBookEntrySerializer OrderBookEntrySerializer = new OrderBookEntrySerializer();
-//		JsonFactory jsonFactory = new JsonFactory();
-//		JsonGenerator JsonGenerator = jsonFactory.createGenerator();
-//        Writer w = new FileWriter("output.txt"); 
-		
+		final CountDownLatch waiter = new CountDownLatch(1);
+		System.out.println("lst.size()"+lst.size());
 		for (TickerPrice TickerPrice : lst) {
 			System.out.println(">>"+TickerPrice);
-//			while(true ) {
-			clientWebSoc.onDepthEvent(TickerPrice.getSymbol(), (DepthEvent response) -> {
-				  System.out.println("???"+response.getAsks());
-				  System.out.println(response.getBids());
-				});
-			clientWebSoc.onAggTradeEvent(TickerPrice.getSymbol(), (AggTradeEvent response) -> {
-				  System.out.println("???"+response.getAggregatedTradeId());
-//				  System.out.println(response.getBids());
-				});
+
 			
-			Thread.sleep(80000);
-//			}
-			
-			
-			
-//			String s =  Utility.ObjTojson(clientREST.getOrderBook(TickerPrice.getSymbol(), 5));
-//			System.out.println("<<"+s) ;
-			
-			
-			
-			
-			
-//			AllOrdersRequest ordrsReq = new AllOrdersRequest(TickerPrice.getSymbol());
-//			List<Order> orders = clientREST.getAllOrders(ordrsReq);
-////			List<Order> orders = clientREST.getOpenOrders(new OrderRequest(null));
-//			for (Order order : orders) {
-//				System.out.println("2>>"+order);
-//			}
-		}
-		System.exit(0);
-		String s =  Utility.ObjTojson(clientREST.getOrderBook("ETHBTC", 5));
+		String s =  Utility.ObjTojson(clientREST.getOrderBook(TickerPrice.getSymbol(), 5));
 		System.out.println("<<"+s) ;
 		Document doc = Document.parse(s);
-		final CountDownLatch waiter = new CountDownLatch(1);
+		
 
 		SingleResultCallback<Void> singleResultCallback = new SingleResultCallback<Void>() {
 
 			@Override
 			public void onResult(final Void result, final Throwable t) {
 				System.out.println("Success");
-//				waiter.countDown();
 			}
 		};
 		collection.insertOne(doc, singleResultCallback);
-		
-//		try {
-//			waiter.await();
-//		} catch (InterruptedException ignore) {
-//		System.out.println("{\"status\":\"Unable to perform the opration\"}");
-//		}
+		}
 		
 		
 		final AtomicReference<Throwable> error = new AtomicReference<>();
@@ -129,30 +86,8 @@ public class BinanceSrvImpl implements BinanceSrv {
 		for (int i = 0; i < resList.size(); i++) {
 			System.out.println(">>>>"+(resList.get(i).toJson()));
 		}
-//		System.out.println("??"+exchangeInfo.getSymbolInfo("ETHBTC"));
 		
-//		for (TickerPrice TickerPrice : lst) {
-//			System.out.println(">>"+TickerPrice);
-////			AllOrdersRequest ordrsReq = new AllOrdersRequest(TickerPrice.getSymbol());
-////			List<Order> orders = clientREST.getAllOrders(ordrsReq);
-//////			List<Order> orders = clientREST.getOpenOrders(new OrderRequest(null));
-////			for (Order order : orders) {
-////				System.out.println("2>>"+order);
-////			}
-//		}
-//		
-		
-//		AllOrdersRequest ordrsReq = new AllOrdersRequest(null);
-//		List<Order> orders = clientREST.getAllOrders(ordrsReq);
-////		List<Order> orders = clientREST.getOpenOrders(new OrderRequest(null));
-//		for (Order order : orders) {
-//			System.out.println("2>>"+order);
-//		}
-//		AllOrdersRequest orderRequest;
-//		orderRequest.s
-		
-//		clientREST.getAllOrders(orderRequest);
-		return "HAAAA";
+		return "Done";
 		
 	}
 	
@@ -160,7 +95,7 @@ public class BinanceSrvImpl implements BinanceSrv {
 		MongoClient mongo = MongoClients.create();
 
 		MongoDatabase db = mongo.getDatabase("testdb");
-		MongoCollection<Document> collection = db.getCollection("test2");
+		MongoCollection<Document> collection = db.getCollection("test3");
 		return collection;
 	}
 
