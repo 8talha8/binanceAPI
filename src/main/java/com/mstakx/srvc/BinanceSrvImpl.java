@@ -1,7 +1,5 @@
 package com.mstakx.srvc;
 
-import static com.mongodb.client.model.Filters.eq;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,14 +8,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.bson.Document;
-import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 
 import com.binance.api.client.BinanceApiAsyncRestClient;
 import com.binance.api.client.BinanceApiClientFactory;
 import com.binance.api.client.BinanceApiRestClient;
 import com.binance.api.client.BinanceApiWebSocketClient;
-import com.binance.api.client.domain.account.request.AllOrdersRequest;
+import com.binance.api.client.domain.event.AggTradeEvent;
+import com.binance.api.client.domain.event.DepthEvent;
 import com.binance.api.client.domain.general.ExchangeInfo;
 import com.binance.api.client.domain.market.OrderBookEntrySerializer;
 import com.binance.api.client.domain.market.TickerPrice;
@@ -31,7 +29,7 @@ import com.mongodb.async.client.MongoDatabase;
 public class BinanceSrvImpl implements BinanceSrv {
 	static MongoCollection<Document> collection  = getTable();;
 	@Override
-	public String do1() throws IOException {
+	public String do1() throws IOException, InterruptedException {
 		// TODO Auto-generated method stub
 		
 		BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance("lw73x6WKXdM5YmhDOJtKOVXOXgCNnoNVkm0YbV1P3668l4J0t2GvrIpftpY3xT3P", "tC3EPxnruxZrpUJUtGL1NkZozc9Y9AhpTXgljihiVuTZB6ec9TlUftANIwPX5G2a");
@@ -46,7 +44,40 @@ public class BinanceSrvImpl implements BinanceSrv {
 		OrderBookEntrySerializer OrderBookEntrySerializer = new OrderBookEntrySerializer();
 //		JsonFactory jsonFactory = new JsonFactory();
 //		JsonGenerator JsonGenerator = jsonFactory.createGenerator();
-//        Writer w = new FileWriter("output.txt");  
+//        Writer w = new FileWriter("output.txt"); 
+		
+		for (TickerPrice TickerPrice : lst) {
+			System.out.println(">>"+TickerPrice);
+//			while(true ) {
+			clientWebSoc.onDepthEvent(TickerPrice.getSymbol(), (DepthEvent response) -> {
+				  System.out.println("???"+response.getAsks());
+				  System.out.println(response.getBids());
+				});
+			clientWebSoc.onAggTradeEvent(TickerPrice.getSymbol(), (AggTradeEvent response) -> {
+				  System.out.println("???"+response.getAggregatedTradeId());
+//				  System.out.println(response.getBids());
+				});
+			
+			Thread.sleep(80000);
+//			}
+			
+			
+			
+//			String s =  Utility.ObjTojson(clientREST.getOrderBook(TickerPrice.getSymbol(), 5));
+//			System.out.println("<<"+s) ;
+			
+			
+			
+			
+			
+//			AllOrdersRequest ordrsReq = new AllOrdersRequest(TickerPrice.getSymbol());
+//			List<Order> orders = clientREST.getAllOrders(ordrsReq);
+////			List<Order> orders = clientREST.getOpenOrders(new OrderRequest(null));
+//			for (Order order : orders) {
+//				System.out.println("2>>"+order);
+//			}
+		}
+		System.exit(0);
 		String s =  Utility.ObjTojson(clientREST.getOrderBook("ETHBTC", 5));
 		System.out.println("<<"+s) ;
 		Document doc = Document.parse(s);
@@ -100,15 +131,15 @@ public class BinanceSrvImpl implements BinanceSrv {
 		}
 //		System.out.println("??"+exchangeInfo.getSymbolInfo("ETHBTC"));
 		
-		for (TickerPrice TickerPrice : lst) {
-			System.out.println(">>"+TickerPrice);
-//			AllOrdersRequest ordrsReq = new AllOrdersRequest(TickerPrice.getSymbol());
-//			List<Order> orders = clientREST.getAllOrders(ordrsReq);
-////			List<Order> orders = clientREST.getOpenOrders(new OrderRequest(null));
-//			for (Order order : orders) {
-//				System.out.println("2>>"+order);
-//			}
-		}
+//		for (TickerPrice TickerPrice : lst) {
+//			System.out.println(">>"+TickerPrice);
+////			AllOrdersRequest ordrsReq = new AllOrdersRequest(TickerPrice.getSymbol());
+////			List<Order> orders = clientREST.getAllOrders(ordrsReq);
+//////			List<Order> orders = clientREST.getOpenOrders(new OrderRequest(null));
+////			for (Order order : orders) {
+////				System.out.println("2>>"+order);
+////			}
+//		}
 //		
 		
 //		AllOrdersRequest ordrsReq = new AllOrdersRequest(null);
