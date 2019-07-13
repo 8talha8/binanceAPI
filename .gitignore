@@ -1,5 +1,6 @@
 HELP.md
 target/
+src/main/java/com/mstakx/srvc/Cons.java
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**
 !**/src/test/**

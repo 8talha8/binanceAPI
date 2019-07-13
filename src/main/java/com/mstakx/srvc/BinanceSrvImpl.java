@@ -23,11 +23,12 @@ import com.mongodb.async.client.MongoDatabase;
 
 @Service
 public class BinanceSrvImpl implements BinanceSrv {
+	
 	static MongoCollection<Document> collection  = getTable();;
 	@Override
 	public String do1() throws IOException, InterruptedException {
 		
-		BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance("lw73x6WKXdM5YmhDOJtKOVXOXgCNnoNVkm0YbV1P3668l4J0t2GvrIpftpY3xT3P", "tC3EPxnruxZrpUJUtGL1NkZozc9Y9AhpTXgljihiVuTZB6ec9TlUftANIwPX5G2a");
+		BinanceApiClientFactory factory = BinanceApiClientFactory.newInstance(Cons.KEY, Cons.SECRT);
 		BinanceApiRestClient clientREST = factory.newRestClient();
 		BinanceApiWebSocketClient clientWebSoc = factory.newWebSocketClient();
 		BinanceApiAsyncRestClient clientRESTAsync = factory.newAsyncRestClient();
