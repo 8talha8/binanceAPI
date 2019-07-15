@@ -1,4 +1,4 @@
-package com.mstakx.srvc;
+package com.mstakx.testsrvc;
 
 import com.binance.api.client.BinanceApiCallback;
 import com.binance.api.client.BinanceApiClientFactory;
@@ -13,6 +13,8 @@ import com.mongodb.async.client.MongoClient;
 import com.mongodb.async.client.MongoClients;
 import com.mongodb.async.client.MongoCollection;
 import com.mongodb.async.client.MongoDatabase;
+import com.mstakx.srvc.Cons;
+import com.mstakx.srvc.Utility;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -50,7 +52,7 @@ import org.bson.Document;
  *
  * The example repeats these steps, on a new web socket, should the web socket connection be lost.
  */
-public class DepthCacheExample {
+public class DepthCacheExample2 {
 	static MongoCollection<Document> collection  = getTable();
   private static final String BIDS = "BIDS";
   private static final String ASKS = "ASKS";
@@ -60,12 +62,12 @@ public class DepthCacheExample {
   private final BinanceApiRestClient restClient;
   private final BinanceApiWebSocketClient wsClient;
   private final WsCallback wsCallback = new WsCallback();
-  private final Map <String, Map<String, NavigableMap<BigDecimal, BigDecimal>>> depthCache = new HashMap<>();
+  private final Map <String, Map<String,ArrayList<PriceQntity>>> depthCache = new HashMap<>();
 
   private long lastUpdateId = -1;
   private volatile Closeable webSocket;
 
-  public DepthCacheExample(String symbol) {
+  public DepthCacheExample2(String symbol) {
 	  
     this.symbol = symbol;
 
@@ -110,18 +112,32 @@ public class DepthCacheExample {
 
     this.lastUpdateId = orderBook.getLastUpdateId();
 
-    NavigableMap<BigDecimal, BigDecimal> asks = new TreeMap<>(Comparator.reverseOrder());
+//    NavigableMap<BigDecimal, BigDecimal> asks = new TreeMap<>(Comparator.reverseOrder());
+    ArrayList<PriceQntity> priceQntityLst = new ArrayList<>();
     for (OrderBookEntry ask : orderBook.getAsks()) {
-      asks.put(new BigDecimal(ask.getPrice()), new BigDecimal(ask.getQty()));
+    	PriceQntity priceQntity = new PriceQntity();
+    	priceQntity.setPrice(new BigDecimal(ask.getPrice()));
+    	priceQntity.setQty(new BigDecimal(ask.getQty()));
+    	priceQntityLst.add(priceQntity);
+//      asks.put(new BigDecimal(ask.getPrice()), new BigDecimal(ask.getQty()));
     }
-    Map<String, NavigableMap<BigDecimal, BigDecimal>> singleSym = new HashMap<>();
-    singleSym.put(ASKS, asks);
+//    asks.put(new BigDecimal(ask.getPrice()), new BigDecimal(ask.getQty()));
+    Map<String, ArrayList<PriceQntity>> singleSym = new HashMap<>();
+    singleSym.put(ASKS, priceQntityLst);
     
     NavigableMap<BigDecimal, BigDecimal> bids = new TreeMap<>(Comparator.reverseOrder());
     for (OrderBookEntry bid : orderBook.getBids()) {
       bids.put(new BigDecimal(bid.getPrice()), new BigDecimal(bid.getQty()));
     }
-    singleSym.put(BIDS, bids);
+    ArrayList<PriceQntity> priceQntityLstBid = new ArrayList<>();
+    for (OrderBookEntry bid : orderBook.getBids()) {
+    	PriceQntity priceQntity = new PriceQntity();
+    	priceQntity.setPrice(new BigDecimal(bid.getPrice()));
+    	priceQntity.setQty(new BigDecimal(bid.getQty()));
+    	priceQntityLstBid.add(priceQntity);
+//      asks.put(new BigDecimal(ask.getPrice()), new BigDecimal(ask.getQty()));
+    }
+    singleSym.put(BIDS, priceQntityLstBid);
     depthCache.put(symbol2, singleSym);
   }
 
@@ -162,46 +178,46 @@ public class DepthCacheExample {
    *
    * Whenever the qty specified is ZERO, it means the price should was removed from the order book.
    */
-  private void updateOrderBook(NavigableMap<BigDecimal, BigDecimal> lastOrderBookEntries,
+  private void updateOrderBook(ArrayList<PriceQntity> arrayList,
                                List<OrderBookEntry> orderBookDeltas) {
     for (OrderBookEntry orderBookDelta : orderBookDeltas) {
       BigDecimal price = new BigDecimal(orderBookDelta.getPrice());
       BigDecimal qty = new BigDecimal(orderBookDelta.getQty());
       if (qty.compareTo(BigDecimal.ZERO) == 0) {
         // qty=0 means remove this level
-        lastOrderBookEntries.remove(price);
+        arrayList.remove(price);
       } else {
-        lastOrderBookEntries.put(price, qty);
+        arrayList.put(price, qty);
       }
     }
   }
 
-  public NavigableMap<BigDecimal, BigDecimal> getAsks(String symbol2) {
+  public ArrayList<PriceQntity> getAsks(String symbol2) {
     return depthCache.get(symbol2).get(ASKS);
   }
 
-  public NavigableMap<BigDecimal, BigDecimal> getBids(String symbol2) {
+  public ArrayList<PriceQntity> getBids(String symbol2) {
     return depthCache.get(symbol2).get(BIDS);
   }
 
   /**
    * @return the best ask in the order book
    */
-  private Map.Entry<BigDecimal, BigDecimal> getBestAsk(String symbol2) {
-    return getAsks(symbol2).lastEntry();
+  private PriceQntity getBestAsk(String symbol2) {
+    return getAsks(symbol2).get(getAsks(symbol2).size());
   }
 
   /**
    * @return the best bid in the order book
    */
-  private Map.Entry<BigDecimal, BigDecimal> getBestBid(String symbol2) {
-    return getBids(symbol2).firstEntry();
+  private PriceQntity getBestBid(String symbol2) {
+    return getBids(symbol2).get(0);
   }
 
   /**
    * @return a depth cache, containing two keys (ASKs and BIDs), and for each, an ordered list of book entries.
    */
-  public Map<String, NavigableMap<BigDecimal, BigDecimal>> getDepthCache(String symbol2) {
+  public Map<String, ArrayList<PriceQntity>> getDepthCache(String symbol2) {
     return depthCache.get(symbol2);
   }
 
@@ -216,37 +232,28 @@ public class DepthCacheExample {
   private void printDepthCache(String symbol2) {
 	  System.out.println("for symbol2 = "+symbol2);
 	    try {
+	    	String s= Utility.ObjTojson(depthCache);
 	    	
-	    	
-	    	Map <String, Map<String, NavigableMap<String, BigDecimal>>> resToDBsymb = new HashMap<>();
-	    	Map<String, NavigableMap<String, BigDecimal>> askbid =new HashMap<>();
-	    	NavigableMap<String, BigDecimal> priceQty = new TreeMap<>(Comparator.reverseOrder());
-	    	 for (String key : depthCache.keySet()) {
-	    		
-	    		  for (String key2 : depthCache.get(key).keySet()) {
-	    			  for (BigDecimal key3 : depthCache.get(key).get(key2).keySet()) {
-	    				  priceQty.put(key3.toString().replaceAll("\\.", "D0T"), depthCache.get(key).get(key2).get(key3));
-		    				    			  }
-	    			  askbid.put(key2, priceQty);
-		    		}
-	    		  resToDBsymb.put(key, askbid);
-	    		}
-	    	 String s= Utility.ObjTojson(resToDBsymb);
-	    	
-			System.out.println(s);
+			System.out.println("JSOOOn>>"+s);
 			save(s);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	    System.out.println("ASKS:(" + getAsks(symbol2).size() + ")");
-	    getAsks(symbol2).entrySet().forEach(entry -> System.out.println(toDepthCacheEntryString(entry)));
+//	    getAsks(symbol2).entrySet().forEach(entry -> System.out.println(toDepthCacheEntryString(entry)));
 	    System.out.println("BIDS:(" + getBids(symbol2).size() + ")");
-	    getBids(symbol2).entrySet().forEach(entry -> System.out.println(toDepthCacheEntryString(entry)));
+//	    getBids(symbol2).entrySet().forEach(entry -> System.out.println(toDepthCacheEntryString(entry)));
 	    System.out.println("BEST ASK: \n" + toDepthCacheEntryString(getBestAsk(symbol2)));
 	    System.out.println("BEST BID: \n" + toDepthCacheEntryString(getBestBid(symbol2)));
 	    System.out.println("End for symbol2 = "+symbol2);
 	    getAll();
+		try {
+			Thread.sleep(1000000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
   }
   private void save(String s) {
 		Document doc = Document.parse(s);
@@ -256,10 +263,12 @@ public class DepthCacheExample {
 
 			@Override
 			public void onResult(final Void result, final Throwable t) {
-				System.out.println("Success");
+				System.out.println("Success>>>");
 			}
+			
 		};
 		collection.insertOne(doc, singleResultCallback);
+	
 	}
   private void getAll() {
 		final CountDownLatch waiter = new CountDownLatch(1);
@@ -290,7 +299,7 @@ public class DepthCacheExample {
 		System.out.println("{\"status\":\"Unable to perform the opration\"}");
 		System.out.println("size : " + resList.size());
 		for (int i = 0; i < resList.size(); i++) {
-			System.out.println("Read From DB>>>>"+(resList.get(i).toJson()));
+			System.out.println("DATAAAAAAAAAAA>>>>"+(resList.get(i).toJson()));
 		}
 	}
   /**
@@ -308,7 +317,7 @@ public class DepthCacheExample {
 		MongoClient mongo = MongoClients.create();
 
 		MongoDatabase db = mongo.getDatabase("testdb");
-		MongoCollection<Document> collection = db.getCollection("test13");
+		MongoCollection<Document> collection = db.getCollection("test9");
 		return collection;
 	}
 
@@ -322,7 +331,7 @@ private static void start() {
 
 private static void forAllSymbols(List<TickerPrice> lst) {
 	for (TickerPrice TickerPrice : lst) {
-		new DepthCacheExample(TickerPrice.getSymbol());
+		new DepthCacheExample2(TickerPrice.getSymbol());
 	}
 }
 

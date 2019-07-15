@@ -1,4 +1,4 @@
-package com.mstakx.binanceAPI;
+package com.mstakx.binanceAPIMain;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;

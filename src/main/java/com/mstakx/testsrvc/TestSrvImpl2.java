@@ -1,4 +1,4 @@
-package com.mstakx.srvc;
+package com.mstakx.testsrvc;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.bson.Document;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import com.binance.api.client.BinanceApiAsyncRestClient;
@@ -20,6 +21,9 @@ import com.mongodb.async.client.MongoClient;
 import com.mongodb.async.client.MongoClients;
 import com.mongodb.async.client.MongoCollection;
 import com.mongodb.async.client.MongoDatabase;
+import com.mstakx.srvc.BinanceSrv;
+import com.mstakx.srvc.Cons;
+import com.mstakx.srvc.Utility;
 
 @Service
 public class TestSrvImpl2 implements BinanceSrv {
@@ -44,6 +48,7 @@ public class TestSrvImpl2 implements BinanceSrv {
 			
 		String s =  Utility.ObjTojson(clientREST.getOrderBook(TickerPrice.getSymbol(), 5));
 		System.out.println("<<"+s) ;
+//		s= "{\"NEOBTC\":{\"ASKS\":{\"0.00116400\":330.05000000,\"0.00116300\":92.92000000,\"0.00116200\":88.77000000,\"0.00116100\":194.68000000,\"0.00116000\":370.17000000,\"0.00115900\":1191.14000000,\"0.00115800\":525.97000000,\"0.00115700\":289.83000000,\"0.00115600\":436.88000000,\"0.00115500\":41.68000000},\"BIDS\":{\"0.00115300\":67.34000000,\"0.00115200\":283.28000000,\"0.00115100\":58.16000000,\"0.00115000\":600.62000000,\"0.00114900\":1561.19000000,\"0.00114800\":191.70000000,\"0.00114700\":276.42000000,\"0.00114600\":114.95000000,\"0.00114500\":530.13000000,\"0.00114400\":2099.20000000}}}";
 		save(s);
 		}
 		
@@ -105,7 +110,8 @@ public class TestSrvImpl2 implements BinanceSrv {
 		MongoClient mongo = MongoClients.create();
 
 		MongoDatabase db = mongo.getDatabase("testdb");
-		MongoCollection<Document> collection = db.getCollection("test3");
+		System.out.println("666666666");
+		MongoCollection<Document> collection = db.getCollection("test7");
 		return collection;
 	}
 
