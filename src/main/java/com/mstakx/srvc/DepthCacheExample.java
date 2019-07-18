@@ -1,5 +1,26 @@
 package com.mstakx.srvc;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+
+import org.bson.Document;
+import org.bson.conversions.Bson;
+import org.json.JSONObject;
+
 import com.binance.api.client.BinanceApiCallback;
 import com.binance.api.client.BinanceApiClientFactory;
 import com.binance.api.client.BinanceApiRestClient;
@@ -13,24 +34,8 @@ import com.mongodb.async.client.MongoClient;
 import com.mongodb.async.client.MongoClients;
 import com.mongodb.async.client.MongoCollection;
 import com.mongodb.async.client.MongoDatabase;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.TreeMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
-
-import org.bson.Document;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.result.UpdateResult;
 
 /**
  * Illustrates how to use the depth event stream to create a local cache of bids/asks for a symbol.
@@ -221,6 +226,7 @@ public class DepthCacheExample {
 	    	Map <String, Map<String, NavigableMap<String, BigDecimal>>> resToDBsymb = new HashMap<>();
 	    	Map<String, NavigableMap<String, BigDecimal>> askbid =new HashMap<>();
 	    	NavigableMap<String, BigDecimal> priceQty = new TreeMap<>(Comparator.reverseOrder());
+	    	List<String> symb = new ArrayList<>();
 	    	 for (String key : depthCache.keySet()) {
 	    		
 	    		  for (String key2 : depthCache.get(key).keySet()) {
@@ -230,11 +236,26 @@ public class DepthCacheExample {
 	    			  askbid.put(key2, priceQty);
 		    		}
 	    		  resToDBsymb.put(key, askbid);
+	    		  symb.add(key);
 	    		}
+	    	 
 	    	 String s= Utility.ObjTojson(resToDBsymb);
+	    	JSONObject j;
+			try {
+				j = new JSONObject(s);
+				Iterator<String> keys = j.keys();
+				String i = keys.next() ;
+		    	j.put("symbID", i);
+		    	s= j.toString();
+		    	System.out.println(s);
+				save(s, i);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 	    	
-			System.out.println(s);
-			save(s);
+	    	
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -248,18 +269,33 @@ public class DepthCacheExample {
 	    System.out.println("End for symbol2 = "+symbol2);
 	    getAll();
   }
-  private void save(String s) {
-		Document doc = Document.parse(s);
+  private void save(String s, String i) {
 		
+//		try {
+//			Bson b = Filters.eq("symbID", i);
+//			collection.updateOne(b, new Document("$set", Document.parse(s)),
+//				    new SingleResultCallback<UpdateResult>() {
+//				        @Override
+//				        public void onResult(final UpdateResult result, final Throwable t) {
+//				            System.out.println(result.getModifiedCount());
+//				        }
+//				    });
+//		} catch (Exception e) {
+			// TODO Auto-generated catch block
+//			e.printStackTrace();
+			Document doc = Document.parse(s);
+			SingleResultCallback<Void> singleResultCallback = new SingleResultCallback<Void>() {
 
-		SingleResultCallback<Void> singleResultCallback = new SingleResultCallback<Void>() {
+				@Override
+				public void onResult(final Void result, final Throwable t) {
+					System.out.println("Success");
+				}
+			};
+			collection.insertOne(doc, singleResultCallback);
+//		}
 
-			@Override
-			public void onResult(final Void result, final Throwable t) {
-				System.out.println("Success");
-			}
-		};
-		collection.insertOne(doc, singleResultCallback);
+
+		
 	}
   private void getAll() {
 		final CountDownLatch waiter = new CountDownLatch(1);
@@ -308,7 +344,7 @@ public class DepthCacheExample {
 		MongoClient mongo = MongoClients.create();
 
 		MongoDatabase db = mongo.getDatabase("testdb");
-		MongoCollection<Document> collection = db.getCollection("test13");
+		MongoCollection<Document> collection = db.getCollection("test17");
 		return collection;
 	}
 

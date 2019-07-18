@@ -62,6 +62,14 @@
     <artifactId>mongodb-driver-async</artifactId>
     <version>3.8.2</version>
 </dependency>
+
+	<!-- https://mvnrepository.com/artifact/org.json/json -->
+<dependency>
+    <groupId>org.json</groupId>
+    <artifactId>json</artifactId>
+    <version>20180813</version>
+</dependency>
+
 <!-- 		<dependency> -->
 <!-- 			<groupId>com.github.binance-exchange</groupId> -->
 <!-- 			<artifactId>binance-java-api</artifactId> -->
